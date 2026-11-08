@@ -6,11 +6,14 @@ hunks with notes, and a severity-tagged risk read. Rendered as a styled HTML
 page and opened in the browser. Everything runs locally; nothing is uploaded.
 
 ```
-/review-map 215            # a PR number
-/review-map feat/j2-api    # a branch, diffed against its merge base
-/review-map abc123..def456 # a commit range
-/review-map                # the current work unit (branch commits + working tree)
+/review-map:review-map 215            # a PR number
+/review-map:review-map feat/j2-api    # a branch, diffed against its merge base
+/review-map:review-map abc123..def456 # a commit range
+/review-map:review-map                # the current work unit (branch commits + working tree)
 ```
+
+Installed as a plugin, the command is namespaced as `/review-map:review-map`.
+With the symlink install below it is plain `/review-map`.
 
 Flags: `--hunks N`, `--max-lines N`, `--force` (recap a tiny diff anyway),
 `--md` (Markdown in chat instead of the page), `--artifact` (publish a
@@ -36,28 +39,42 @@ code) are copied from the real diff. Only the prose is the model's.
 
 Requires Claude Code, `git`, `gh` (for PR mode) and Python 3.
 
+The repo is its own plugin marketplace. From a shell:
+
+```sh
+claude plugin marketplace add milenkotomic/review-map
+claude plugin install review-map@review-map
+```
+
+Or inside Claude Code: `/plugin marketplace add milenkotomic/review-map`, then
+`/plugin install review-map@review-map`. Start a new session and type
+`/review-map:review-map`.
+
+### Update
+
+```sh
+claude plugin marketplace update review-map
+claude plugin update review-map@review-map
+```
+
+Restart Claude Code afterwards. The plugin runs from a cached copy, so
+changes pushed to this repo reach you only through an update.
+
+### Developing the skill
+
+To edit the skill and see changes without a push and update, use the symlink
+install instead:
+
 ```sh
 git clone https://github.com/milenkotomic/review-map.git ~/Developer/review-map
 ~/Developer/review-map/install.sh
 ```
 
-The installer symlinks `skills/review-map` into `~/.claude/skills/`, so a
-`git pull` updates the skill. Start a new Claude Code session and type
-`/review-map`.
-
-### Or install it as a plugin
-
-The repo is also its own plugin marketplace:
-
-```
-/plugin marketplace add milenkotomic/review-map
-/plugin install review-map@review-map
-```
-
-Plugin skills are namespaced, so the command is `/review-map:review-map`.
-Updates: `claude plugin marketplace update review-map`, then
-`claude plugin update review-map@review-map`. Use one install method per
-machine, not both.
+It links `skills/review-map` into `~/.claude/skills/`, so the command is
+`/review-map` and edits take effect in the next session. Use one install
+method per machine, not both: uninstall the plugin first
+(`claude plugin uninstall review-map@review-map`), or remove the
+`~/.claude/skills/review-map` link before installing the plugin.
 
 ## Configure
 
@@ -78,7 +95,8 @@ skills/review-map/
   scripts/collect-diff.sh  gathers PR / branch / range / working-tree diffs into one bundle
   scripts/render.py        Markdown to styled HTML, no dependencies beyond Python 3
   evals/                   test cases for `claude plugin eval` and the skill-creator loop
-install.sh                 symlinks the skill into ~/.claude/skills
+install.sh                 symlink install for developing the skill
+.claude-plugin/            plugin.json and marketplace.json
 ```
 
 ## Credits
