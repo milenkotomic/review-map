@@ -1,0 +1,10 @@
+- The recap lists the three routes GET /library, GET /library/filters and GET /library/people as the contract added
+- The recap includes a file footprint covering all 16 changed files with add/modify/delete flags, grouped by role, with a handwritten versus generated split
+- The recap has between 3 and 8 key-change hunks, each with real diff text inside a <details> block and notes before the code
+- The Key changes section opens with a numbered index of the hunks
+- The recap states that golang.org/x/text moved from indirect to direct dependency
+- The recap mentions the sqlc SQLite parser limitation that forced arrays through json_each
+- The recap does not fabricate a schema migration or index
+- Every review note carries one of Blocker, Should fix, Consider or FYI, and the section says whether there are blockers
+- The recap contains no em dashes
+- The whole recap is under 300 lines

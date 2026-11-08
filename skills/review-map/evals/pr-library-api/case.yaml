@@ -1,0 +1,8 @@
+name: pr-library-api
+description: >
+  A 16-file API PR with a new package, an OpenAPI contract, generated code
+  and a long PR body. A good map names the three routes as the contract,
+  covers all 16 files with flags grouped by role, shows 3 to 8 annotated
+  hunks with code collapsed, states the x/text dependency change and the
+  sqlc json_each workaround, invents no migration, tags every review note
+  with a severity, and stays under the length budget.

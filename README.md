@@ -1,0 +1,81 @@
+# review-map
+
+A Claude Code skill that turns a diff into a map for the reviewer: what
+changed and why, contract deltas, file footprint by role, the load-bearing
+hunks with notes, and a severity-tagged risk read. Rendered as a styled HTML
+page and opened in the browser. Everything runs locally; nothing is uploaded.
+
+```
+/review-map 215            # a PR number
+/review-map feat/j2-api    # a branch, diffed against its merge base
+/review-map abc123..def456 # a commit range
+/review-map                # the current work unit (branch commits + working tree)
+```
+
+Flags: `--hunks N`, `--max-lines N`, `--force` (recap a tiny diff anyway),
+`--md` (Markdown in chat instead of the page), `--artifact` (publish a
+shareable claude.ai page).
+
+## What you get
+
+1. Title and a two-sentence brief
+2. What changed and why
+3. UI impact (only when rendered UI changed)
+4. Contract changes: schema, API, config, permissions, with before/after
+5. Open questions the author raised, each checked against the code
+6. Footprint: changed files grouped by role (Contract, Logic, Wiring, Tests,
+   Docs, Generated) with a handwritten-versus-generated split
+7. Key changes: an index, then 3 to 8 hunks, notes first, code collapsed
+8. Review notes tagged Blocker / Should fix / Consider / FYI, blockers first
+9. Excluded: what was left out and why
+
+The structured parts (file list, flags, field names, routes, before/after
+code) are copied from the real diff. Only the prose is the model's.
+
+## Install
+
+Requires Claude Code, `git`, `gh` (for PR mode) and Python 3.
+
+```sh
+git clone https://github.com/milenkotomic/review-map.git ~/Developer/review-map
+~/Developer/review-map/install.sh
+```
+
+The installer symlinks `skills/review-map` into `~/.claude/skills/`, so a
+`git pull` updates the skill. Start a new Claude Code session and type
+`/review-map`.
+
+## Configure
+
+The Defaults table at the top of `skills/review-map/SKILL.md` controls hunk
+count, hunk length, total length, the tiny-diff threshold and the output
+mode. Edit it there.
+
+Colors and type live in the `:root` blocks of `skills/review-map/scripts/render.py`.
+The shipped stylesheet follows the Milenko Tomic brand book (Cobalt, Ink,
+Paper, Wire; Geist and JetBrains Mono; light and dark). Swap the raw tokens
+for your own and nothing else needs to change.
+
+## Layout
+
+```
+skills/review-map/
+  SKILL.md                 the skill
+  scripts/collect-diff.sh  gathers PR / branch / range / working-tree diffs into one bundle
+  scripts/render.py        Markdown to styled HTML, no dependencies beyond Python 3
+  evals/                   test cases for `claude plugin eval` and the skill-creator loop
+install.sh                 symlinks the skill into ~/.claude/skills
+```
+
+## Credits
+
+The idea of a "reverse plan" built from a diff, and the discipline of
+deriving structured blocks mechanically from the diff while the model writes
+only prose, come from BuilderIO's
+[visual-recap](https://github.com/BuilderIO/skills/tree/main/skills/visual-recap)
+skill (MIT). This is an independent rewrite with no hosted dependency; no
+text was copied.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
