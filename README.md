@@ -45,6 +45,20 @@ The installer symlinks `skills/review-map` into `~/.claude/skills/`, so a
 `git pull` updates the skill. Start a new Claude Code session and type
 `/review-map`.
 
+### Or install it as a plugin
+
+The repo is also its own plugin marketplace:
+
+```
+/plugin marketplace add milenkotomic/review-map
+/plugin install review-map@review-map
+```
+
+Plugin skills are namespaced, so the command is `/review-map:review-map`.
+Updates: `claude plugin marketplace update review-map`, then
+`claude plugin update review-map@review-map`. Use one install method per
+machine, not both.
+
 ## Configure
 
 The Defaults table at the top of `skills/review-map/SKILL.md` controls hunk

@@ -1,0 +1,16 @@
+{
+  "name": "review-map",
+  "version": "0.1.0",
+  "description": "Turn a git diff, branch, commit range, PR, or working tree into a reviewer-oriented map of the change, rendered as a styled HTML page.",
+  "author": {
+    "name": "Milenko Tomic",
+    "url": "https://github.com/milenkotomic"
+  },
+  "homepage": "https://github.com/milenkotomic/review-map",
+  "repository": "https://github.com/milenkotomic/review-map",
+  "license": "MIT",
+  "keywords": ["review", "diff", "pull-request", "code-review", "html"],
+  "experimental": {
+    "evals": "skills/review-map/evals"
+  }
+}

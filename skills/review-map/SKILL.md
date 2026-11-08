@@ -50,13 +50,13 @@ Figure out what to recap from the request and the repo state, in this order:
   changes, plus any commits on this branch not yet on the default branch.
 - A pasted diff: use it as is.
 
-Run `scripts/collect-diff.sh` from this skill directory to gather metadata,
-stat, name-status, and the full patch into one file. Pass `-C <repo>` and
+Run `${CLAUDE_SKILL_DIR}/scripts/collect-diff.sh` to gather metadata, stat,
+name-status, and the full patch into one file. Pass `-C <repo>` and
 `--out <scratchpad>/recap-diff.txt` so nothing lands in the repo. Always go
 through the script and the Read tool, not `git diff` or `gh pr diff` in the
-shell: on this machine the rtk hook summarizes shell output and silently drops
-lines from a diff, and a recap built on a truncated diff is wrong in exactly
-the way the grounding rule forbids.
+shell: shell-output filters (the rtk hook, for one) summarize long output and
+silently drop lines from a diff, and a recap built on a truncated diff is
+wrong in exactly the way the grounding rule forbids.
 
 Read the handwritten files in the bundle once, top to bottom, taking notes as
 you go. Generated files (sqlc or oapi-codegen output, lockfiles, generated TS
@@ -232,7 +232,7 @@ six-line hunk plus context, not a forty-line one.
 
 Nobody wants to read a 300-line Markdown file in a terminal. Save the
 Markdown to the scratchpad as `<slug>.md`, then run
-`scripts/render.py <slug>.md <slug>.html` from this skill directory and open
+`python3 ${CLAUDE_SKILL_DIR}/scripts/render.py <slug>.md <slug>.html` and open
 the result with `open <slug>.html`. The script renders GitHub-flavored
 Markdown with the brand stylesheet it carries (tables, collapsible `<details>`
 blocks, colored diff lines, severity chips on the review notes), fully
