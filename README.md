@@ -39,22 +39,24 @@ code) are copied from the real diff. Only the prose is the model's.
 
 Requires Claude Code, `git`, `gh` (for PR mode) and Python 3.
 
-The repo is its own plugin marketplace. From a shell:
+The plugin is published through my plugin marketplace,
+[milenkotomic/claude-plugins](https://github.com/milenkotomic/claude-plugins).
+From a shell:
 
 ```sh
-claude plugin marketplace add milenkotomic/review-map
-claude plugin install review-map@review-map
+claude plugin marketplace add milenkotomic/claude-plugins
+claude plugin install review-map@milenkotomic
 ```
 
-Or inside Claude Code: `/plugin marketplace add milenkotomic/review-map`, then
-`/plugin install review-map@review-map`. Start a new session and type
+Or inside Claude Code: `/plugin marketplace add milenkotomic/claude-plugins`,
+then `/plugin install review-map@milenkotomic`. Start a new session and type
 `/review-map:review-map`.
 
 ### Update
 
 ```sh
-claude plugin marketplace update review-map
-claude plugin update review-map@review-map
+claude plugin marketplace update milenkotomic
+claude plugin update review-map@milenkotomic
 ```
 
 Restart Claude Code afterwards. The plugin runs from a cached copy, so
@@ -73,7 +75,7 @@ git clone https://github.com/milenkotomic/review-map.git ~/Developer/review-map
 It links `skills/review-map` into `~/.claude/skills/`, so the command is
 `/review-map` and edits take effect in the next session. Use one install
 method per machine, not both: uninstall the plugin first
-(`claude plugin uninstall review-map@review-map`), or remove the
+(`claude plugin uninstall review-map@milenkotomic`), or remove the
 `~/.claude/skills/review-map` link before installing the plugin.
 
 ## Configure
@@ -96,7 +98,7 @@ skills/review-map/
   scripts/render.py        Markdown to styled HTML, no dependencies beyond Python 3
   evals/                   test cases for `claude plugin eval` and the skill-creator loop
 install.sh                 symlink install for developing the skill
-.claude-plugin/            plugin.json and marketplace.json
+.claude-plugin/            plugin.json
 ```
 
 ## Credits
