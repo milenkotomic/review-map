@@ -3,10 +3,14 @@
 
 Usage: render.py input.md output.html
 
-GitHub-flavored Markdown via marked.js (cdnjs). The Markdown is embedded as
-data and parsed in the browser; nothing is executed from it. Diff fences get
-per-line add/remove coloring, <details> blocks collapse, and review-note
-severities (Blocker, Should fix, Consider, FYI) become badges.
+GitHub-flavored Markdown via marked.js, sanitized with DOMPurify. Both are
+vendored in vendor/ and inlined, so the page is fully offline. The Markdown is
+untrusted (it quotes diffs and PR bodies), so it is embedded as a JSON string,
+parsed in the browser, and sanitized before it touches the DOM; a
+Content-Security-Policy allows only the page's own inline scripts (by hash)
+and no network access. Diff fences get per-line add/remove coloring,
+<details> blocks collapse, and review-note severities (Blocker, Should fix,
+Consider, FYI) become badges.
 
 Styling follows the Milenko Tomic brand book (claude.ai/design project
 "Milenko Tomic - Brand Book"): Cobalt / Ink / Paper / Wire tokens, Geist for
@@ -17,7 +21,13 @@ installed locally (they are in the brand book's fonts/ folder); the stacks
 fall back to system fonts. Tokens live in the :root blocks below; change them
 there only.
 """
+import base64
 import datetime
+import hashlib
+import html
+import json
+import pathlib
+import re
 import sys
 
 if len(sys.argv) != 3:
@@ -27,11 +37,13 @@ src, dst = sys.argv[1], sys.argv[2]
 with open(src, encoding="utf-8") as handle:
     md = handle.read()
 
+VENDOR = pathlib.Path(__file__).resolve().parent / "vendor"
+
 PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="__CSP__">
 <title>__TITLE__</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <style>
 /* ---- Brand tokens (raw) ---- */
 :root {
@@ -180,18 +192,26 @@ footer { max-width: 1040px; margin: 0 auto; padding: 0 24px 40px; color: var(--f
 </div>
 <article id="out"></article>
 <footer>facts in tables and hunks come from the diff // prose is the model's reading</footer>
-<script id="src" type="text/plain">__MD__</script>
-<script>
-const md = document.getElementById('src').textContent;
+<script id="src" type="application/json">__MD__</script>
+<script>__MARKED__</script>
+<script>__PURIFY__</script>
+<script>__MAIN__</script>
+</body></html>
+"""
+
+# Raw string: the backslashes below are JavaScript escapes, passed through as is.
+MAIN_JS = r"""
+const md = JSON.parse(document.getElementById('src').textContent);
 marked.setOptions({ gfm: true, breaks: false });
 const out = document.getElementById('out');
-out.innerHTML = marked.parse(md);
+// The Markdown quotes untrusted diffs and PR text: never insert it unsanitized.
+out.innerHTML = DOMPurify.sanitize(marked.parse(md));
 
 // Diff coloring per line.
 for (const block of document.querySelectorAll('pre > code.language-diff')) {
   block.parentElement.classList.add('diff');
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  block.innerHTML = block.textContent.replace(/\\n$/, '').split('\\n').map(l => {
+  block.innerHTML = block.textContent.replace(/\n$/, '').split('\n').map(l => {
     const cls = l.startsWith('+') ? 'add' : l.startsWith('-') ? 'del' : l.trim() === '...' ? 'ell' : 'ctx';
     return '<span class="' + cls + '">' + (esc(l) || ' ') + '</span>';
   }).join('');
@@ -218,7 +238,7 @@ for (const strong of out.querySelectorAll('li > strong')) {
   badge.textContent = strong.textContent.replace(/:$/, '');
   strong.replaceWith(badge);
   const next = badge.nextSibling;
-  if (next && next.nodeType === 3) next.textContent = next.textContent.replace(/^\\s*:\\s*/, '');
+  if (next && next.nodeType === 3) next.textContent = next.textContent.replace(/^\s*:\s*/, '');
 }
 for (const h of out.querySelectorAll('h2')) {
   if (/review notes/i.test(h.textContent)) {
@@ -230,16 +250,42 @@ for (const h of out.querySelectorAll('h2')) {
     if (ol && ol.tagName === 'OL') ol.classList.add('index');
   }
 }
-</script>
-</body></html>
 """
 
+
+def inline_js(code):
+    """Make JS safe inside <script>: no sequence may end or re-enter script data.
+
+    Both sequences only occur inside string or regex literals in the vendored
+    files, where \\x3C is an equivalent escape for '<'.
+    """
+    return re.sub(r"<(?=/script|!--)", r"\\x3C", code, flags=re.IGNORECASE)
+
+
+def csp_hash(code):
+    return "'sha256-" + base64.b64encode(hashlib.sha256(code.encode("utf-8")).digest()).decode() + "'"
+
+
+scripts = {
+    "__MARKED__": inline_js((VENDOR / "marked.min.js").read_text(encoding="utf-8")),
+    "__PURIFY__": inline_js((VENDOR / "purify.min.js").read_text(encoding="utf-8")),
+    "__MAIN__": MAIN_JS,
+}
+csp = ("default-src 'none'; script-src " + " ".join(csp_hash(c) for c in scripts.values())
+       + "; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'")
+
 title = next((line[2:].strip() for line in md.splitlines() if line.startswith("# ")), "Review map")
-today = datetime.date.today().isoformat()
-safe_md = md.replace("</script", "<\\/script")
-page = (PAGE.replace("__TITLE__", title.replace("<", "&lt;"))
-            .replace("__DATE__", today)
-            .replace("__MD__", safe_md))
+# JSON with every '<' escaped cannot close the data <script>, whatever its case.
+md_json = json.dumps(md).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+values = {
+    "__CSP__": csp,
+    "__TITLE__": html.escape(title),
+    "__DATE__": datetime.date.today().isoformat(),
+    "__MD__": md_json,
+    **scripts,
+}
+# One pass, so a placeholder that appears inside a substituted value is never expanded.
+page = re.sub("|".join(map(re.escape, values)), lambda m: values[m.group(0)], PAGE)
 with open(dst, "w", encoding="utf-8") as handle:
     handle.write(page)
 print(dst)

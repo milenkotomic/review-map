@@ -8,12 +8,14 @@
 #   collect-diff.sh [-C REPO] [--out FILE] --worktree   # staged + unstaged + branch commits
 #
 # Defaults: --worktree if nothing is given. -C defaults to the current directory.
-# --out defaults to $TMPDIR/recap-diff-<timestamp>.txt, never inside the repo.
+# --out defaults to a fresh private mktemp file under $TMPDIR, never inside the repo.
 # The output is plain text, meant to be read once, top to bottom.
 
 set -euo pipefail
+# The bundle can hold secrets from the diff: keep every file this script writes private.
+umask 077
 
-out="${TMPDIR:-/tmp}/recap-diff-$(date +%s).txt"
+out=""
 repo="."
 mode="worktree"
 base=""
@@ -35,6 +37,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Refs and PR come from the model, which may have read hostile text. Reject anything
+# git or gh could parse as an option (e.g. --output=FILE), and pass refs after
+# --end-of-options as a second guard.
+not_option() { [[ "$2" != -* ]] || { echo "invalid $1: $2" >&2; exit 2; }; }
+not_option --base "$base"; not_option --head "$head"; not_option --range "$range"
+if [[ "$mode" == pr && ! "$pr" =~ ^([0-9]+|https://[^[:space:]]+/pull/[0-9]+/?)$ ]]; then
+  echo "invalid --pr: $pr (want a number or a pull request URL)" >&2; exit 2
+fi
+
+[[ -n "$out" ]] || out="$(mktemp "${TMPDIR:-/tmp}/recap-diff-XXXXXXXX")"
 out="$(cd "$(dirname "$out")" && pwd)/$(basename "$out")"
 cd "$repo"
 
@@ -71,54 +83,54 @@ base: {{.baseRefName}}  head: {{.headRefName}}
     branch)
       if [[ -z "$base" ]]; then
         db="$(default_branch)"
-        base="$(git merge-base "origin/$db" "$head" 2>/dev/null || git merge-base "$db" "$head")"
+        base="$(git merge-base --end-of-options "origin/$db" "$head" 2>/dev/null || git merge-base --end-of-options "$db" "$head")"
         echo "base: merge-base with $db = $base"
       else
         echo "base: $base"
       fi
       echo "head: $head"
       section "COMMITS"
-      git log --oneline --no-decorate "$base..$head"
+      git log --oneline --no-decorate --end-of-options "$base..$head"
       section "STAT"
-      git diff --stat=120 "$base" "$head"
+      git diff --stat=120 --end-of-options "$base" "$head"
       section "NAME-STATUS"
-      git diff --name-status -M "$base" "$head"
+      git diff --name-status -M --end-of-options "$base" "$head"
       section "PATCH"
-      git diff -M --no-color "$base" "$head"
+      git diff -M --no-color --end-of-options "$base" "$head"
       ;;
     range)
       echo "range: $range"
       section "COMMITS"
-      git log --oneline --no-decorate "$range"
+      git log --oneline --no-decorate --end-of-options "$range"
       section "STAT"
-      git diff --stat=120 "$range"
+      git diff --stat=120 --end-of-options "$range"
       section "NAME-STATUS"
-      git diff --name-status -M "$range"
+      git diff --name-status -M --end-of-options "$range"
       section "PATCH"
-      git diff -M --no-color "$range"
+      git diff -M --no-color --end-of-options "$range"
       ;;
     worktree)
       db="$(default_branch)"
-      mb="$(git merge-base "origin/$db" HEAD 2>/dev/null || git merge-base "$db" HEAD 2>/dev/null || echo "")"
+      mb="$(git merge-base --end-of-options "origin/$db" HEAD 2>/dev/null || git merge-base --end-of-options "$db" HEAD 2>/dev/null || echo "")"
       if [[ -n "$mb" && "$mb" != "$(git rev-parse HEAD)" ]]; then
         echo "branch commits since merge-base with $db ($mb):"
         section "COMMITS"
-        git log --oneline --no-decorate "$mb..HEAD"
+        git log --oneline --no-decorate --end-of-options "$mb..HEAD"
         section "STAT (committed on branch)"
-        git diff --stat=120 "$mb" HEAD
+        git diff --stat=120 --end-of-options "$mb" HEAD
         section "NAME-STATUS (committed on branch)"
-        git diff --name-status -M "$mb" HEAD
+        git diff --name-status -M --end-of-options "$mb" HEAD
         section "PATCH (committed on branch)"
-        git diff -M --no-color "$mb" HEAD
+        git diff -M --no-color --end-of-options "$mb" HEAD
       fi
       section "STAT (uncommitted: staged + unstaged)"
-      git diff --stat=120 HEAD
+      git diff --stat=120 --end-of-options HEAD
       section "NAME-STATUS (uncommitted)"
-      git diff --name-status -M HEAD
+      git diff --name-status -M --end-of-options HEAD
       section "UNTRACKED"
       git ls-files --others --exclude-standard
       section "PATCH (uncommitted)"
-      git diff -M --no-color HEAD
+      git diff -M --no-color --end-of-options HEAD
       ;;
   esac
 } > "$out"

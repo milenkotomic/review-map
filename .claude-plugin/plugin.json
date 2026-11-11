@@ -1,6 +1,6 @@
 {
   "name": "review-map",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Turn a git diff, branch, commit range, PR, or working tree into a reviewer-oriented map of the change, rendered as a styled HTML page.",
   "author": {
     "name": "Milenko Tomic",

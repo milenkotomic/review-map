@@ -95,7 +95,8 @@ for your own and nothing else needs to change.
 skills/review-map/
   SKILL.md                 the skill
   scripts/collect-diff.sh  gathers PR / branch / range / working-tree diffs into one bundle
-  scripts/render.py        Markdown to styled HTML, no dependencies beyond Python 3
+  scripts/render.py        Markdown to styled, sanitized HTML, no dependencies beyond Python 3
+  scripts/vendor/          marked.js 12.0.2 and DOMPurify 3.1.6, inlined into every page
   evals/                   test cases for `claude plugin eval` and the skill-creator loop
 install.sh                 symlink install for developing the skill
 .claude-plugin/            plugin.json
@@ -109,6 +110,11 @@ only prose, come from BuilderIO's
 [visual-recap](https://github.com/BuilderIO/skills/tree/main/skills/visual-recap)
 skill (MIT). This is an independent rewrite with no hosted dependency; no
 text was copied.
+
+Vendored, unmodified, with their license headers intact:
+[marked](https://github.com/markedjs/marked) (MIT) and
+[DOMPurify](https://github.com/cure53/DOMPurify) (Apache 2.0 or MPL 2.0).
+Both match the cdnjs SRI hashes for their versions.
 
 ## License
 
