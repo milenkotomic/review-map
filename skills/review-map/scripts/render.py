@@ -205,7 +205,8 @@ const md = JSON.parse(document.getElementById('src').textContent);
 marked.setOptions({ gfm: true, breaks: false });
 const out = document.getElementById('out');
 // The Markdown quotes untrusted diffs and PR text: never insert it unsanitized.
-out.innerHTML = DOMPurify.sanitize(marked.parse(md));
+// Styles are forbidden too: the CSP allows inline styles, so raw HTML could restyle the page.
+out.innerHTML = DOMPurify.sanitize(marked.parse(md), { FORBID_TAGS: ['style'], FORBID_ATTR: ['style'] });
 
 // Diff coloring per line.
 for (const block of document.querySelectorAll('pre > code.language-diff')) {

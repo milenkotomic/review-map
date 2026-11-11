@@ -96,7 +96,7 @@ skills/review-map/
   SKILL.md                 the skill
   scripts/collect-diff.sh  gathers PR / branch / range / working-tree diffs into one bundle
   scripts/render.py        Markdown to styled, sanitized HTML, no dependencies beyond Python 3
-  scripts/vendor/          marked.js 12.0.2 and DOMPurify 3.1.6, inlined into every page
+  scripts/vendor/          marked.js 12.0.2 and DOMPurify 3.4.17, inlined into every page
   evals/                   test cases for `claude plugin eval` and the skill-creator loop
 install.sh                 symlink install for developing the skill
 .claude-plugin/            plugin.json
